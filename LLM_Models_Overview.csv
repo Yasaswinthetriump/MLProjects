@@ -1,0 +1,12 @@
+Model,Size,Type
+Mistral,7x7B,Instruct
+Qwen,32B,
+LLaMA 3.3,70B,Instruct
+Qwen 2.5,32B,"Coden, Instruct"
+Gemma,2-22B,Q4
+LLaMA 4 Scout,17B-16E,Instruct
+Pythia,12B,2409
+Qwen v1,7B,Instruct
+DeepSeek,,Distilled - LLaMA 8B
+LLaMA 3,8B,
+Gemma3,4bit,
