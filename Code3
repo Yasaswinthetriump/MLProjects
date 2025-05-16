@@ -1,0 +1,33 @@
+
+import pandas as pd
+
+rows = []
+inside_pip = False
+
+for line in raw_text.strip().splitlines():
+    line = line.strip()
+    if line == "pip:":
+        inside_pip = True
+        continue
+    if line.startswith("- "):
+        line = line[2:].strip()
+        if inside_pip:
+            parts = line.split("==")
+            rows.append({
+                "Library": parts[0],
+                "Version": parts[1] if len(parts) > 1 else "",
+                "Build": "",
+                "Source": "pip"
+            })
+        else:
+            parts = line.split("=")
+            rows.append({
+                "Library": parts[0],
+                "Version": parts[1] if len(parts) > 1 else "",
+                "Build": parts[2] if len(parts) > 2 else "",
+                "Source": "conda"
+            })
+
+# Create and display DataFrame
+df = pd.DataFrame(rows)
+df.sort_values("Library").reset_index(drop=True)
