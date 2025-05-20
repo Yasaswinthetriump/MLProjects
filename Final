@@ -1,0 +1,38 @@
+Finalized Meeting Notes – LLM Platform Setup & MVP1 Planning
+1. Model Selection & Exploration
+- LLaMA 3.3 is currently the selected model for MVP1, based on active exploration and alignment with use cases like LLMx and Writing Buddy.
+- The model has been scanned and is stored securely in Artifactory with restricted access (currently only accessible by Rahul and core team).
+- Any model moving to production will follow a formal promotion and approval process.
+2. Platform Independence
+- Goal is to build a fully internal LLM development and validation platform to avoid reliance on external platforms like Tachyon.
+- This will provide full control over infrastructure, model management, and tool integration.
+3. Environment Planning
+- Base Conda environment will include core libraries like PyTorch, Transformers, and Accelerate.
+- Fine-tuning tools (e.g., LoRA, PEFT, bitsandbytes) will be available in separate environments based on specific needs.
+4. Vector Store Strategy
+- For MVP1, we will use PostgreSQL with the pgVector extension for vector storage and search.
+- Alternatives like ChromaDB and Pinecone will be considered in future phases (MVP2+).
+5. Model Promotion & Inference Pipeline
+- A promotion pipeline will be created to move models from dev to prod.
+- It includes fetching from Artifactory, loading into GPU memory, and exposing via API.
+- This pipeline will apply to both downloaded and fine-tuned models.
+6. Monitoring & Dashboards
+- Run:AI provides basic monitoring and usage metrics.
+- Custom dashboards (e.g., per model or GPU job-level metrics) can be created based on user requests.
+7. Evaluation Tools & Experiment Tracking
+- Evaluation tools (BLEU, ROUGE, perplexity, etc.) will be scoped as part of MVP2.
+- A shared evaluation mechanism will be made available for both development and validation teams.
+
+Questions to Ask Rahul – Final List
+- Are we finalizing LLaMA 3.3 for now, or do you have other models in mind for production?
+- From the models you've explored (e.g., Alibaba, ISPAT, Facebook), which are truly worth pushing to prod?
+- Do you need LoRA, QLoRA, or PEFT right away, or can we plan those for MVP2?
+- What specific packages should be included in your Conda environment (e.g., transformers, trl, peft)?
+- Would a shared environment be sufficient for your needs, or do you prefer a private setup?
+- Do you already have access to the training/validation datasets? Where are they stored?
+- What’s your expected flow for running inference once a model is finalized—Jupyter, API, or something else?
+- Do you need an API wrapper or utility for consistent model inference across environments?
+- Are you expecting BLEU, ROUGE, or any other evaluation metrics, or are you doing manual checks for now?
+- What level of GPU/job monitoring do you need beyond the default Run:AI dashboards?
+- Any blockers or tool gaps you’re facing that are slowing down your progress?
+- How often do you expect to promote models from dev to production—just one time or recurring?
