@@ -1,0 +1,13 @@
+Questions to Ask 
+- So, are we finalizing LLaMA 3.3 for now, or do you have any other models you’re seriously considering for production?
+- Of the models you explored earlier (Alibaba, ISPAT, Facebook ones), which ones do you think are actually worth pushing forward?
+- For fine-tuning – do you really need LoRA, QLoRA, or PEFT packages now, or can we defer that to MVP2?
+- What exactly do you need in your Conda environment? Like, list of packages – transformers, trl, peft, etc.?
+- Are you okay using a shared environment, or do you want a separate one for yourself?
+- Do you already have your training or validation data ready? Where is it stored?
+- Once you're done with your model – how do you plan to run inference? Like, Jupyter? API? Something else?
+- Do you want us to build an API wrapper or something reusable for that inference?
+- For evaluation – are you looking for any tools like BLEU, ROUGE, etc., or just manual output checking for now?
+- What GPU/job-level details do you want to see? Is the Run:AI dashboard enough, or do you want any custom dashboard stuff?
+- Any specific blockers you’re facing right now? Anything missing that’s stopping your progress?
+- Lastly – how often do you see yourself pushing models from dev to prod? Like is this a one-time thing or recurring?
