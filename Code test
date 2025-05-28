@@ -1,0 +1,44 @@
+# Step 0: Imports
+from sentence_transformers import SentenceTransformer
+import pinecone
+import torch
+import os
+
+# Step 1: Load sentence transformer model (CPU)
+model = SentenceTransformer('all-MiniLM-L6-v2')  # lightweight for CPU
+model.to('cpu')
+
+# Step 2: Initialize Pinecone
+pinecone.init(api_key="YOUR_API_KEY", environment="YOUR_ENVIRONMENT")  # Replace with actual values
+
+index_name = "rag-test"
+if index_name not in pinecone.list_indexes():
+    pinecone.create_index(index_name, dimension=384)  # 384 is dimension of all-MiniLM-L6-v2
+
+index = pinecone.Index(index_name)
+
+# Step 3: Sample documents
+docs = [
+    "The capital of France is Paris.",
+    "Python is a popular programming language.",
+    "Pinecone is used for vector search and similarity."
+]
+
+# Step 4: Embed and upsert to Pinecone
+vectors = model.encode(docs)
+ids = [f"doc-{i}" for i in range(len(docs))]
+
+index.upsert([(id_, vec.tolist()) for id_, vec in zip(ids, vectors)])
+
+# Step 5: Querying with similarity
+query = "What is Pinecone used for?"
+query_vec = model.encode([query])[0].tolist()
+
+# Retrieve top 1 match
+results = index.query(vector=query_vec, top_k=1, include_metadata=False)
+
+# Step 6: Display result
+top_id = results["matches"][0]["id"]
+score = results["matches"][0]["score"]
+
+print(f"Top match: {top_id} (score: {score})")
