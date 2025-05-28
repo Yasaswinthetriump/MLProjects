@@ -1,0 +1,26 @@
+import yaml
+
+# Load files
+with open("environment.yml", "r") as f:
+    env = yaml.safe_load(f)
+
+with open("not_found.txt", "r") as nf:
+    bad_pkgs = {line.strip().split("=")[0] for line in nf if line.strip()}
+
+# Clean dependencies
+cleaned_deps = []
+for dep in env["dependencies"]:
+    if isinstance(dep, str):
+        pkg_name = dep.split("=")[0].strip()
+        if pkg_name not in bad_pkgs:
+            cleaned_deps.append(dep)
+    elif isinstance(dep, dict) and "pip" in dep:
+        cleaned_pip = [p for p in dep["pip"] if p.split("==")[0].strip() not in bad_pkgs]
+        cleaned_deps.append({"pip": cleaned_pip})
+
+# Save cleaned YAML
+env["dependencies"] = cleaned_deps
+with open("cleaned_environment.yml", "w") as out:
+    yaml.dump(env, out, sort_keys=False)
+
+print("✅ Cleaned YAML written to cleaned_environment.yml")
