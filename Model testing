@@ -1,0 +1,46 @@
+import time
+import psutil
+from transformers import pipeline
+
+# Step 1: Monitor CPU usage before inference
+cpu_before = psutil.cpu_percent(interval=1)
+print(f"🔍 CPU Usage Before Inference: {cpu_before}%")
+
+# Step 2: Load the Q&A pipeline on CPU
+start_time = time.time()
+qa_pipeline = pipeline("question-answering", device=-1)  # -1 forces CPU
+load_time = time.time() - start_time
+print(f"✅ Model loaded in {load_time:.2f} seconds (CPU only)")
+
+# Step 3: Sample context and question
+context = """
+Conda is an open-source package and environment management system. 
+It allows creating isolated environments and helps manage Python dependencies efficiently. 
+It works across operating systems and is widely used in data science workflows.
+"""
+
+question = "What is the main use of Conda?"
+
+# Step 4: Run inference and time it
+start_infer = time.time()
+result = qa_pipeline(question=question, context=context)
+inference_time = time.time() - start_infer
+
+# Step 5: Monitor CPU usage after inference
+cpu_after = psutil.cpu_percent(interval=1)
+print(f"🔍 CPU Usage After Inference: {cpu_after}%")
+
+# Step 6: Display results
+print("\n📌 Question:", question)
+print("📚 Answer:", result['answer'])
+print(f"⏱️ Inference Time: {inference_time:.2f} seconds")
+print(f"📊 Model Confidence: {result['score']:.4f}")
+
+🔍 CPU Usage Before Inference: 8.0%
+✅ Model loaded in 2.34 seconds (CPU only)
+🔍 CPU Usage After Inference: 65.3%
+
+📌 Question: What is the main use of Conda?
+📚 Answer: manage Python dependencies efficiently
+⏱️ Inference Time: 1.89 seconds
+📊 Model Confidence: 0.9132
