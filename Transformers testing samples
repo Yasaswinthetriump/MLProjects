@@ -1,0 +1,85 @@
+Certainly, Shindu! Here's a ready-to-use Bokeh visualization notebook cell that works with a Hugging Face Transformers Q&A pipeline, version 5.9+ compatible, and clean for direct use in your Jupyter Notebook on JupyterHub. This shows the answer score visually using Bokeh bar chart.
+
+
+---
+
+✅ Step-by-Step Notebook Cell (Clean, Paste-Ready)
+
+# Step 1: Install Bokeh (if not installed)
+!pip install bokeh --quiet
+
+# Step 2: Import libraries
+from transformers import pipeline
+from bokeh.plotting import figure, show, output_notebook
+from bokeh.models import ColumnDataSource
+
+# Step 3: Prepare output for inline display
+output_notebook()
+
+# Step 4: Load Q&A model
+qa_pipeline = pipeline("question-answering", model="distilbert-base-uncased", device=-1)
+
+# Step 5: Context and question
+context = """
+Transformers are a type of deep learning model used for tasks like text classification, Q&A, and summarization.
+They use self-attention mechanisms to understand relationships in sequential data.
+"""
+
+questions = [
+    "What are transformers used for?",
+    "What mechanism do transformers use?"
+]
+
+# Step 6: Run Q&A
+results = []
+for question in questions:
+    result = qa_pipeline(question=question, context=context)
+    results.append({"question": question, "answer": result['answer'], "score": result['score']})
+
+# Step 7: Prepare data for Bokeh
+questions_text = [r["question"] for r in results]
+scores = [r["score"] for r in results]
+
+source = ColumnDataSource(data=dict(questions=questions_text, scores=scores))
+
+# Step 8: Create Bokeh bar chart
+p = figure(x_range=questions_text, height=300, title="Answer Confidence Scores",
+           toolbar_location=None, tools="")
+
+p.vbar(x='questions', top='scores', width=0.6, source=source)
+p.y_range.start = 0
+p.xaxis.axis_label = "Questions"
+p.yaxis.axis_label = "Confidence Score"
+p.xaxis.major_label_orientation = 1
+
+# Step 9: Show plot
+show(p)
+
+
+---
+
+✅ What This Does:
+
+Uses Hugging Face Transformers for Q&A
+
+Renders a Bokeh bar chart of confidence scores
+
+Runs entirely on CPU
+
+Requires only transformers and bokeh
+
+
+
+---
+
+Let me know if you want:
+
+To include user input widgets
+
+To display answers on hover
+
+Or store results into a CSV or database
+
+
+Happy charting!
+
