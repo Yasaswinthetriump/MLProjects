@@ -1,0 +1,15 @@
+qa = pipeline("question-answering", model="deepset/roberta-base-squad2", device=-1)
+
+context = "Transformers are used in NLP tasks such as classification, summarization, and question answering."
+question = "What are transformers used for?"
+
+result = qa(question=question, context=context)
+
+print("📌 Question:", question)
+print("🔍 Answer:", result['answer'])
+print("📊 Confidence:", round(result['score'], 4))
+
+
+📌 Question: What are transformers used for?
+🔍 Answer: classification, summarization, and question answering
+📊 Confidence: 0.9723
