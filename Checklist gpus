@@ -1,0 +1,130 @@
+As a Data Scientist, once the infrastructure team gives you access to the OpenShift (OCP) namespaces (especially with H200 GPUs), you can validate your environment with the following structured checklist:
+
+
+---
+
+✅ OCP Namespace Validation Checklist for Data Scientists
+
+🔐 1. Namespace Access & Permissions
+
+[ ] Confirm your OCP username is added to the correct namespace
+
+[ ] Run:
+
+oc whoami
+oc get namespaces
+
+→ You should see your assigned namespace(s)
+
+[ ] Validate edit/create permissions:
+
+oc auth can-i create pods -n <your-namespace>
+
+
+
+---
+
+📦 2. Check GPU Access
+
+[ ] Launch a simple GPU pod using nvidia/cuda image:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-check
+spec:
+  containers:
+  - name: gpu-container
+    image: nvidia/cuda:12.3.2-base-ubuntu22.04
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    command: ["nvidia-smi"]
+
+[ ] Run:
+
+oc apply -f gpu-check.yaml -n <your-namespace>
+oc logs pod/gpu-check
+
+→ You should see H200 GPU listed in the logs
+
+
+
+---
+
+📁 3. Validate PVC and Storage Mounts
+
+[ ] Check if PVCs are accessible:
+
+oc get pvc -n <your-namespace>
+
+[ ] Launch a pod to mount PVC:
+
+volumeMounts:
+  - mountPath: /mnt/data
+    name: my-pvc
+volumes:
+  - name: my-pvc
+    persistentVolumeClaim:
+      claimName: <your-pvc-name>
+
+[ ] Check read/write by placing a test file in /mnt/data
+
+
+
+---
+
+🧪 4. Check Conda/Kernel Availability (JupyterHub)
+
+[ ] Login to JupyterHub (OCP AI Dashboard)
+
+[ ] Validate the following:
+
+[ ] Your namespace appears in the dropdown
+
+[ ] You can start a Jupyter kernel
+
+[ ] GPU kernel boots correctly (run !nvidia-smi)
+
+[ ] Your custom Conda env is listed (if pre-configured)
+
+
+
+
+---
+
+🧪 5. Test ML Workflow (Quick)
+
+Run a simple GPU test:
+
+import torch
+torch.cuda.is_available()  # Should return True
+torch.cuda.get_device_name()
+
+Optional (if doing LLM):
+
+pip install transformers
+from transformers import AutoTokenizer, AutoModel
+tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+model = AutoModel.from_pretrained("bert-base-uncased").cuda()
+
+
+---
+
+📊 6. Monitor GPU Usage
+
+[ ] Open Run:AI UI (or ask admin) to monitor:
+
+[ ] GPU utilization
+
+[ ] Your container status
+
+[ ] Resource quota usage
+
+
+
+
+---
+
+Would you like a Word or Confluence version of this checklist to save as your personal guide or share with your team?
+
