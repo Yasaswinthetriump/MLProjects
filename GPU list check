@@ -1,0 +1,68 @@
+GPU Validation & Project Setup Checklist (OCP AI - Project: mrmcd-jupyterhub)
+
+
+---
+
+✅ STEP 1: OCP Namespace & Access Setup
+
+[ ] Namespace created in OpenShift: mrmcd-jupyterhub
+
+[ ] Admin access granted to platform admin (initial setup)
+
+[ ] Accessor roles assigned:
+
+[ ] Admin: Infra team lead
+
+[ ] Lead Developer: Access to YAML, Terminal, Metrics
+
+[ ] Users: JupyterHub pod access
+
+
+
+✅ STEP 2: Pod & Resource Validation
+
+[ ] Jupyter pod up and running: jupyter-adithya-20chennavaram
+
+[ ] CPU requested vs limit verified:
+
+[ ] 2 cores requested
+
+[ ] 4 cores total limit
+
+
+[ ] Memory request vs usage observed (e.g., 50 GiB monitored)
+
+[ ] Filesystem and network activity monitored
+
+
+✅ STEP 3: GPU Validation
+
+[ ] nvidia-smi runs inside pod (GPU detected)
+
+[ ] Required drivers and CUDA toolkit installed
+
+[ ] TensorFlow / PyTorch detects GPU
+
+[ ] Run sample workload for GPU test (matrix mult or ResNet)
+
+
+✅ STEP 4: Monitoring Tools
+
+[ ] Metrics tab working in OCP dashboard
+
+[ ] Container CPU, memory, file system usage graphs are visible
+
+[ ] Logs accessible via Logs tab for real-time debugging
+
+
+✅ STEP 5: Storage Validation
+
+[ ] Check if pod uses S3 (NetApp) or PVC
+
+[ ] PVC/S3 correctly mounted and data accessible
+
+[ ] Test data read/write to mounted storage
+
+
+✅ STEP 6: Development & Deployment Pipeline
+
