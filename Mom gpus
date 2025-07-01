@@ -1,0 +1,58 @@
+Get the GPU cluster operational and ready to run LLMs (even without Run:AI) by Friday.
+
+
+---
+
+📅 Plan to Achieve the Goal
+
+1. Infrastructure Readiness (Mon-Tue)
+
+[ ] Confirm server setup is complete (on SILO 0.6 or other cluster).
+
+[ ] Validate GPU visibility (nvidia-smi) and driver compatibility.
+
+[ ] Ensure access to namespaces where GPU workloads will run.
+
+
+2. Environment Setup (Tue-Wed)
+
+[ ] Finalize conda or venv environment with required packages:
+
+PyTorch / Transformers / CUDA / LLM dependencies
+
+
+[ ] Validate container or notebook image builds (JupyterHub, if needed).
+
+[ ] Test simple GPU script (e.g., torch.cuda.is_available()) to confirm functionality.
+
+
+3. Harness / CI Pipeline (Wed)
+
+[ ] If using Harness, validate repo onboarding and deployment pipeline (for Jupyter or LLM workload).
+
+[ ] Deploy and test sample notebook or workload via pipeline.
+
+
+4. Run:AI Optional Setup (Parallel)
+
+[ ] Confirm Run:AI operator status (if installed).
+
+[ ] If not available, skip fractional GPU scheduling, and plan direct pod-level access.
+
+
+5. LLM Validation (Thu)
+
+[ ] Run a basic LLM test (e.g., HuggingFace model inference) on the cluster.
+
+[ ] Log GPU usage metrics manually (since Run:AI may not be available).
+
+[ ] Validate storage access (NetApp/NAS or S3) if models or data are large.
+
+
+6. Final Checklist and Report (Fri)
+
+[ ] Document what is working (infra, access, model run).
+
+[ ] Capture what is pending (if any) and what Run:AI will add when integrated.
+
+[ ] Prepare a short demo or log evidence of LLM running on GPU cluster.
