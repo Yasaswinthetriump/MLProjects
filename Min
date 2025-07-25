@@ -1,0 +1,183 @@
+Here’s a Confluence page draft for documenting the MDD Checker System Architecture. You can directly copy-paste this into your Confluence editor and adjust the formatting using headers, panels, code blocks, or tables.
+
+
+---
+
+📘 MDD Checker System Architecture Overview
+
+🧩 Purpose
+
+This page outlines the architecture and workflow of the MDD Checker System designed to automate validation of Model Design Documents (MDD) and related artifacts using AI-powered validation checks via Gemini API.
+
+
+---
+
+🗂️ Key Components
+
+1. Minerva (UI & Document Submission)
+
+Model Developer uploads MDD and associated documents via Minerva UI.
+
+MDD Upload Service:
+
+Stores documents in ICMP.
+
+Sends a trigger message to MIDAS using Kafka (asynchronous).
+
+
+MDD Result Request Service:
+
+Retrieves validation results from MIDAS and sends them via email.
+
+
+
+
+---
+
+2. ICMP (Document Repository)
+
+Stores various model-related documents:
+
+MDD – Model Design Document
+
+MUT – Model Use Template
+
+MIT – Model Identification Template
+
+MKP – Model KPIs & Performance
+
+MIE – Model Implementation Evidence
+
+CC – Change Control
+
+MMP – Model Monitoring Plan
+
+MCA – Model Level Control Activities
+
+
+Each uploaded document is assigned a unique ICMP ID, which is passed to MIDAS for tracking and retrieval.
+
+
+---
+
+3. MIDAS (Checker Backend)
+
+Handles asynchronous validation:
+
+checker-request-queue: Listens for Minerva’s trigger.
+
+MDD Checker Service:
+
+Fetches documents from ICMP using IDs.
+
+Submits them to Gemini API for validation.
+
+Stores results in S3 (temp) and PostgreSQL (final).
+
+
+checker-result-queue: Sends response back to Minerva.
+
+
+
+---
+
+4. Tachyon Ecosystem (Validation via Gemini)
+
+Gemini API: AI model hosted on GCP that checks MDDs against rules and guidelines.
+
+Tachyon: Gateway between MIDAS and Gemini API.
+
+Works in synchronous mode: Waits for validation response before proceeding.
+
+
+
+---
+
+5. Storage & Reporting
+
+S3 (HPOS): Temporary store for validation artifacts.
+
+PostgreSQL: Permanent store for result metadata.
+
+Power BI:
+
+Reporting dashboard for superusers and AI model debugging.
+
+Tracks accuracy, false positives, and performance over time.
+
+
+
+
+---
+
+🔁 Data Flow Diagram
+
+> (Refer to attached architecture diagram image on this page or use draw.io embedded diagram)
+
+
+
+High-level Flow:
+
+1. Developer uploads MDD via Minerva.
+
+
+2. Minerva saves to ICMP and sends a message to Kafka (MIDAS).
+
+
+3. MIDAS fetches document(s) and calls Gemini API.
+
+
+4. Validation result is stored and sent back to Minerva.
+
+
+5. Email sent to developer/validator.
+
+
+6. Results logged in PostgreSQL → Visualized in Power BI.
+
+
+
+
+---
+
+🛠️ Functional Highlights
+
+Minerva checks document existence in ICMP before allowing submission.
+
+MIDAS waits for all required ICMP IDs before starting validation.
+
+Gemini validation is modular and can be replaced with other LLMs.
+
+Feedback loop from Power BI helps improve AI validation over time.
+
+
+
+---
+
+🧪 Future Enhancements
+
+Add document rejection cleanup from ICMP.
+
+Add UI display for validator feedback.
+
+Enable configuration of validation rules via MIDAS UI or API.
+
+Replace Gemini API with internal H200 GPU-based LLMs.
+
+
+
+---
+
+🧾 Change Log
+
+Date	Change Description	Updated By
+
+2025-07-25	Initial draft of architecture doc	Sri
+2025-07-26	Added Power BI integration notes	[Your Name]
+
+
+
+---
+
+Would you like this turned into an actual .confluence-exportable format or inserted into a specific Confluence space with draw.io integration?
+
