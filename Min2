@@ -1,0 +1,147 @@
+Got it. Here's a human-style Confluence page draft that feels natural and collaborative:
+
+
+---
+
+📄 MDD Checker System – Architecture & Functional Overview
+
+Owner: [Your Name]
+Last Updated: [Date]
+Contributors: Srikanth, Sandhya, Rahul, Jin, Malavika, Freddy, Team
+
+
+---
+
+🔍 Overview
+
+This document captures the architecture and working flow of the MDD Checker system that we’ve been collaboratively refining. The intent is to build a robust, semi-automated validation pipeline for MDD (Model Development Document) and its related files, helping both developers and validators improve document quality with early feedback.
+
+
+---
+
+🔗 Key Components
+
+1. Minerva (Uploader UI)
+
+UI through which model developers upload MDD and related documents.
+
+Triggers the checker service by posting a job to Kafka (Checker Request Queue) once all files are uploaded and ICMP confirms storage.
+
+Includes metadata like document UUIDs, model version, checklist type.
+
+
+
+2. ICMP (Document Storage)
+
+Acts as a secure document repository for MDD, MLCA, MUT, TMB, and other supporting files.
+
+Minerva gets back unique file IDs from ICMP upon upload, which are passed downstream.
+
+
+
+3. MIDAS Checker Service
+
+Listens to the request queue (Kafka).
+
+Pulls files from ICMP using the IDs received from Minerva.
+
+Submits documents to Gemini API (for initial NLP-based review).
+
+Stores results in PostgreSQL (status, logs, timestamps, model ID, etc.).
+
+Posts a message back to Checker Result Queue, which Minerva listens to.
+
+
+
+4. Gemini API (Model Validator)
+
+Receives document content (usually in-memory or from temporary cache).
+
+Applies checklist-based checks (structure, required sections, guideline adherence).
+
+Returns pass/fail with reasons (can be extended later with fine-tuned LLMs).
+
+
+
+5. Power BI Dashboard (Reporting Layer)
+
+Pulls logs and results from MIDAS PostgreSQL.
+
+Gives visibility to validator leads, team managers.
+
+Sample visuals: success/failure rate, common issues, doc type trends.
+
+
+
+
+
+---
+
+🔁 Flow Summary (Simplified)
+
+1. Developer uploads MDD and related docs on Minerva UI.
+
+
+2. Minerva uploads all docs to ICMP, retrieves their UUIDs.
+
+
+3. If upload is successful (200 OK for all files), Minerva pushes a message into the Kafka checker request queue.
+
+
+4. MIDAS picks the request, fetches all docs, checks via Gemini API.
+
+
+5. Result stored in PostgreSQL and also pushed to checker result queue.
+
+
+6. Minerva listens to this queue and presents result back to the user.
+
+
+7. Power BI pulls this data for audit/reporting.
+
+
+
+
+---
+
+💡 Design Decisions
+
+Asynchronous Design: Minerva and MIDAS communicate via queues, allowing decoupled operation.
+
+Synchronous Gemini Call: Gemini API calls are blocking – MIDAS waits for response before proceeding.
+
+No File Storage in MIDAS: We avoid storing full documents in MIDAS. Temporary caching or direct memory use is preferred, but large docs go to S3.
+
+Validator Feedback Loop: Any failure results are sent back to developers for re-uploading; valid documents proceed to the next step (validation).
+
+Future-Proofing: Gemini API is modular – can be swapped with in-house GCP Gemini endpoint once available.
+
+
+
+---
+
+🚧 Known Gaps / To-Dos
+
+Clarify how non-MDD docs (MLCA, TMB) are named/linked for retrieval.
+
+Discuss fallback strategy if Gemini API fails (retry thresholds, fallback response).
+
+Confirm if ICMP file UUIDs will always be available for all uploads (Minerva implementation).
+
+Work with Navin's team to decide UI checkbox logic for opting in/out of checker.
+
+Add data privacy controls for document text logging.
+
+
+
+---
+
+📌 Final Notes
+
+Let’s keep iterating on this. Please feel free to comment or suggest edits directly. Special thanks to everyone contributing on the design and business logic alignment – this wouldn’t be possible without cross-functional support.
+
+
+---
+
+Would you like me to also convert this into a nicely formatted Confluence markup version with emojis, collapsible sections, and page links?
+
