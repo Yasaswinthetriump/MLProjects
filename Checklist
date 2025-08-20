@@ -1,0 +1,173 @@
+Here’s a structured checklist you can use for your MDD Checker project — covering infra, services, flows, and validations. I’ve broken it into phases so you can tick items off as you implement.
+
+
+---
+
+✅ MDD Checker – End-to-End Checklist
+
+1. Environment Setup
+
+[ ] Kafka topics created (mddchecker.request, mddchecker.response, mddchecker.audit).
+
+[ ] NAS inbound & outbound folders provisioned.
+
+[ ] Service account has read/write permissions to NAS paths.
+
+[ ] PostgreSQL database created with schema for:
+
+[ ] requests table
+
+[ ] results table
+
+[ ] audit logs
+
+
+[ ] MIDAS Swagger endpoint registered for MDD Checker API.
+
+
+
+---
+
+2. Producer & Request Flow
+
+[ ] Define JSON schema for request messages:
+
+mdd_id, file_path, action, requested_by, timestamp, etc.
+
+
+[ ] Producer service (Django / Python) can:
+
+[ ] Serialize request to JSON.
+
+[ ] Send request to mddchecker.request topic.
+
+[ ] Log metadata (partition, offset).
+
+
+[ ] Validation to ensure only authorized users can submit requests.
+
+
+
+---
+
+3. Consumer & Processing
+
+[ ] Consumer subscribed to mddchecker.request topic.
+
+[ ] Perform entitlement check before reading NAS file.
+
+[ ] Validate file availability in NAS inbound path.
+
+[ ] Extract and transform MDD into required format (JSON / XLS).
+
+[ ] Call Tachyon → Gemini API for validation.
+
+[ ] Capture response and map to standard output schema.
+
+
+
+---
+
+4. Output & Storage
+
+[ ] Save validation results in PostgreSQL:
+
+status, errors, warnings, timestamps.
+
+
+[ ] Write output XLS/JSON file to NAS outbound path.
+
+[ ] Send result email:
+
+Attach XLS.
+
+Include summary in email body.
+
+To → requestor + configured distribution list.
+
+
+
+
+---
+
+5. Integration & APIs
+
+[ ] Swagger UI in MIDAS:
+
+Expose endpoint /mddchecker/validate
+
+Allow user to submit MDD validation request.
+
+Allow fetching historical validation results.
+
+
+[ ] Audit logging:
+
+request_id
+
+user_id
+
+time_in/time_out
+
+status
+
+
+[ ] Notifications:
+
+Email or event to Minerva UI for status updates.
+
+
+
+
+---
+
+6. Security & Entitlements
+
+[ ] File access restricted by AD groups / service account policy.
+
+[ ] API authentication/authorization (JWT / OAuth2).
+
+[ ] Sensitive info masked in logs.
+
+[ ] Only entitled users can view or download results.
+
+
+
+---
+
+7. Testing
+
+[ ] Unit tests for producer & consumer.
+
+[ ] Mock Tachyon/Gemini API for local testing.
+
+[ ] Integration test: end-to-end request → NAS → validation → response.
+
+[ ] Negative test: missing file, entitlement failure, invalid schema.
+
+[ ] Performance test: multiple concurrent requests.
+
+
+
+---
+
+8. Deployment & Monitoring
+
+[ ] Deploy service on OCP (OpenShift).
+
+[ ] Configure CI/CD (Harness / GitHub Actions).
+
+[ ] Set quotas for CPU/GPU usage (if applicable).
+
+[ ] Centralized logging (Splunk / Grafana).
+
+[ ] Alerts on failure or SLA breach.
+
+
+
+---
+
+✅ This way, you have a ready-to-track checklist from setup → production.
+
+Do you want me to turn this into a Confluence-style table (columns: Phase, Checklist Item, Status) so your team can track progress directly?
+
