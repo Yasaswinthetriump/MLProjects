@@ -1,0 +1,35 @@
+Here are ten key flow points based on the “MDD Checker System Diagram – Simplified One”:
+
+1. Document preparation & upload: A model developer prepares model documentation — such as the model design document (MDD), model use template (MUT), model identification template (MIT), model KPIs and performance results (MKP), and other evidence — and uploads these files through the Minerva UI.
+
+
+2. Kafka producer to queue uploads: The Minerva UI calls an MDD Upload Service that acts as a Kafka producer. Producers in Apache Kafka publish events (messages) to topics and are decoupled from consumers. The upload request and document metadata are sent to a Kafka topic (e.g., midas.mdd.checker.requests) so that downstream services can process the files asynchronously.
+
+
+3. Kafka consumer in MIDAS: MIDAS subscribes to the upload topic via a Kafka consumer. In Kafka, consumers read events from topics and process them independently. MIDAS retrieves the uploaded file and stores it in the document storage system (ICMP), ensuring the document is securely held before analysis.
+
+
+4. Document retrieval for checking: The MDD Checker Service fetches the document from the storage system. It performs preliminary validation and prepares the file for deeper analysis, such as checking format consistency or extracting relevant sections.
+
+
+5. LLM‑based content analysis: To evaluate the content of the document, the MDD Checker calls the Tachyon component’s Gemini API. The API uses a large language model (LLM) — a language model trained with self‑supervised learning on massive text corpora and designed for natural language processing tasks — to analyze the document, identify gaps or errors, and generate an assessment.
+
+
+6. Email notification: After processing, the MDD Checker sends the results to the model developer via email. Email is a widely used method of transmitting and receiving digital messages over computer networks, making it an effective channel for notifying stakeholders about document status and identified issues.
+
+
+7. Relational storage of results: The checker also writes the analysis results to a PostgreSQL database. PostgreSQL is a powerful open‑source object‑relational database system known for its reliable architecture, data integrity and ability to scale complex workloads. Storing results here allows easy querying, auditing and future reference.
+
+
+8. Long‑term storage: Copies of the raw documents and results may be stored in long‑term storage systems. For high‑throughput batch applications, Hadoop’s distributed file system (HDFS) offers fault‑tolerant storage designed for large data sets. For cloud object storage, Amazon S3 provides scalable storage via a web service interface and can store any type of object for backups or data lakes.
+
+
+9. Reporting via Power BI: A reporting layer, implemented by the PyFarm component, accesses the stored results and uses business‑intelligence tools like Power BI. Power BI helps organizations turn data into actionable insights and provides tools to connect, visualize and share data. Dashboards can show the status of all model documents, highlight non‑compliant submissions and track resolution metrics.
+
+
+10. End‑to‑end flow: In summary, the system flows from the Minerva UI (document upload) → Kafka (upload queue) → MIDAS (document storage) → MDD Checker Service (retrieval and LLM analysis) → Tachyon/Gemini API (LLM invocation) → email and database for notifications and storage → Power BI for dashboards. This pipeline automates document checking and reporting, ensuring model documentation is validated and easily monitored.
+
+
+
+These points outline the sequence of actions and illustrate how message queues, storage systems, large language models and reporting tools work together in the MDD Checker system.
+
