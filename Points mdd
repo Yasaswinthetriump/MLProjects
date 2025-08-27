@@ -1,0 +1,30 @@
+refresh all the sentences
+
+Here are all the steps refreshed for clarity and alignment with the diagram, each using concise language and properly integrating “outbound messages” where relevant:
+
+***
+
+## Updated Step Descriptions
+
+1. **The Model Developer uploads MDD documents via the Minerva UI interface for processing.**[1]
+
+2. **The Minerva UI triggers the MDD Upload Service, which acts as a Kafka producer and generates outbound messages with uploaded document details.**[1]
+
+3. **MIDAS subscribes as a Kafka consumer to the Minerva topic (midas.mdd.checker.requests), receiving outbound messages from the MDD Upload Service to initiate document validation.**[1]
+
+4. **The MDD Checker Service reads each outbound message from Kafka and performs primary validation on the uploaded document.**[1]
+
+5. **Primary validation results and any supporting files are stored in OCP Pod Storage to maintain persistent records and facilitate downstream actions.**[1]
+
+6. **Once validation is complete, the MDD Checker invokes Tachyon’s Gemini API for further document analysis on GCP, and receives synchronous model evaluation results.**[1]
+
+7. **After validation and model analysis, MIDAS sends the check results—such as Excel reports—via email and updates the result queue as needed.**[1]
+
+8. **Processed documents and audit entries are stored in PyFarm’s PostgreSQL database, supporting future weekly performance reporting in Power BI for model validators.**[1]
+
+***
+
+These refreshed sentences provide a clear, stepwise description of each component’s purpose and the flow of outbound messages across the MDD Checker system[1].
+
+Citations:
+[1] selected_image_3489616668716001008.jpg https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/images/49964895/093156b6-b34d-4163-8e6b-5654bc90c3bb/selected_image_3489616668716001008.jpg
