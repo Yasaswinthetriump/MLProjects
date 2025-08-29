@@ -1,0 +1,17 @@
+Here’s a clean 4-point update (Bono style) you can use:
+
+1. Successfully completed review – Conducted design review with Minerva and confirmed alignment across both teams.
+
+
+2. Demoed working prototype – Showed the end-to-end flow of MDD Checker from Kafka request through validation and Postgres storage.
+
+
+3. Finalized architecture – Agreed on one inbound Kafka topic, Postgres (24h TTL) for input/output JSON, audit metadata retention, and MIDAS-owned email/API notifications.
+
+
+4. Next steps – Minerva to share final payload schema & email template; MIDAS to implement purge job, Results API, and token caching for Gemini integration.
+
+
+
+Do you want me to also create a short “leadership slide” version of these four points (very high-level, one line each) for Sadaf?
+
