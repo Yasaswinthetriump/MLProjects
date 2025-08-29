@@ -1,0 +1,9 @@
+Simplified architecture finalized: We agreed to use a single inbound Kafka topic from Minerva to MIDAS (no outbound topic needed), convert inbound MDD notifications to JSON once, validate via Gemini/Tachyon, and send results using a Minerva‑supplied email template. A new results API will let Minerva pull outcomes programmatically, eliminating the need for a dedicated Kafka topic for outbound messages.
+
+Storage & retention streamlined: Input and output JSON documents will be stored temporarily in Postgres (with a 24‑hour retention and automatic purge) while audit metadata remains long‑term for reporting. This replaces earlier plans for pod/PVC or S3 storage and keeps storage usage contained.
+
+Implementation progress: We have begun coding the Postgres tables, added APG access‑token caching (to avoid redundant token fetches), and started integrating the email template. Guardrails such as correlation ID, user ID, file size and URL are being captured in the inbound message handler. Work has also started on the results API and purge mechanism.
+
+Next steps: Obtain final approval from Minerva on the inbound payload schema and email template, confirm the retention window for the original MDD in ICMP, and finish the purge job and results API. Once these are complete, we’ll be ready for integration testing and deployment.
+
+
