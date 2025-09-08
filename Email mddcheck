@@ -1,0 +1,17 @@
+Tone:
+Got it — we’ll keep the email tone [formal/lightweight] as you suggested. The disclaimer will cover compliance, so the rest of the body can stay [concise/neutral].
+
+Feedback mechanism:
+Understood. We’ll implement feedback as [reply-to-email / survey link / acknowledgment], and keep it simple for recipients. We’ll also make sure results are tagged in Postgres so adoption/quality can be tracked separately.
+
+Disclaimer scope:
+Confirmed — disclaimer will be included [in all environments / only in lower envs] as per your guidance. That way, we stay transparent about model-generated results.
+
+Attachment format:
+Acknowledged. We’ll always send [Excel only / Excel + JSON], so users get something they can actually work with, while still having raw data available for advanced analysis if required.
+
+Sign-off instructions:
+Clear — the template will direct recipients to [sign off in Minerva / reply by email], so there’s no confusion about where the approval action is captured.
+
+Future enforcement:
+Makes sense. We’ll [add / not add] a note about Checker results possibly being required for model approval, to align with Amit Reddy’s direction. We can make this conditional (on/off flag) so the wording can evolve later without changing the template structure.
