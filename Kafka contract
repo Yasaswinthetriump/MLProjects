@@ -1,0 +1,18 @@
+Kafka Message Contract – mnrv.inventory.modelchecker
+
+Field	Type	Required	Example	Notes
+
+request_id	UUID	Yes	7a4d8e2a-3e1a-4a1f-bf5a-9f5b0a5d9f70	Unique per submission; also used as Kafka partition key.
+correlation_id	UUID	Yes	e0a2f2fb-6c5a-4cbd-9801-2d2f7b0a2b61	Same value echoed downstream for traceability across systems.
+uploaded_by	String	Yes	minerva_svc@bank	User/service ID that submitted the document.
+uploaded_date	Timestamp	Yes	2025-09-09T10:12:34Z	When Minerva received/uploaded the file (ISO-8601 UTC).
+document_name	String	Yes	mdd_v12.docx	File name only.
+document_size	Integer	Yes	582311	File size in bytes.
+document_filetype	String	Yes	docx	Supported types: docx, pdf, etc.
+submitted_at	Timestamp	Yes	2025-09-09T10:12:35Z	When Minerva published the Kafka message (ISO-8601 UTC).
+model_id	String	Recommended	MIN-CRD-00123	Canonical model identifier from Minerva.
+environment	Enum	Recommended	UAT	Helps avoid cross-env confusion (DEV, SIT, UAT, PROD).
+nas_inbound_path	String	Recommended	/nas/minerva/inbound/MIN-CRD-00123/mdd_v12.docx	Absolute NAS path for the file.
+file_checksum	String	Recommended	sha256:5b62…c1	For integrity/audit.
+schema_version	String	Recommended	1.0.0	Enables additive schema evolution without breaking consumers.
+metadata	Object	Optional	{ "businessLine": "Retail" }	Free-form key/value for business tags or additional info.
