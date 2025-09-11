@@ -1,0 +1,43 @@
+
+
+Subject: Kafka Message Contract for MDD Checker
+
+Hi Om,
+
+Thanks for your note. To make sure we’re aligned, here is the Kafka message contract we are planning to use for the MDD Checker integration.
+
+Topic Details
+
+Topic Name: mnrv.inventory.modelchecker
+
+Consumer Group ID: mnrv-model-checker-CG1
+
+
+Message Schema (JSON):
+
+{
+  "request_id": "string (UUID, unique per submission)",
+  "correlation_id": "string (UUID, used for tracing across systems)",
+  "uploaded_by": "string (user email or service id)",
+  "uploaded_date": "ISO8601 timestamp",
+  "document_name": "string",
+  "document_size": "integer (bytes)",
+  "document_filetype": "string (docx, pdf, etc.)",
+  "submitted_at": "ISO8601 timestamp"
+}
+
+Notes
+
+The above schema extends the fields you already share in the Minerva email template (uploadedBy, uploadedDate, documentName, documentSize, documentFiletype).
+
+request_id and correlation_id are included for traceability so requests can be linked to downstream validation results and audit logs.
+
+Validation results will be provided via NAS + email as agreed, not through a separate Kafka result topic at this stage.
+
+
+Please review and let me know if you would like any adjustments (field names, additional metadata, or formatting changes). Once we agree, I can also put this into Confluence so it’s documented formally.
+
+Thanks,
+Sri
+
+
