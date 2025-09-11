@@ -1,0 +1,7 @@
+Notes:
+
+doc_id and doc_store_id must either both be present (ICMP flow) or both absent (model flow).
+
+doccheck_id is always server-generated and should not be passed in the request payload.
+
+environment and file_checksum are not recommended, as these values are derived internally.
