@@ -1,0 +1,10 @@
+Field	Type	Description	Required
+
+request_id	UUID	Unique ID per submission	Yes
+correlation_id	UUID	Traceability across systems	Yes
+uploaded_by	String	User email / service id	Yes
+uploaded_date	Timestamp	Upload date/time in ISO8601 format	Yes
+document_name	String	Name of the document	Yes
+document_size	Integer	File size in bytes	Yes
+document_filetype	String	File type (docx, pdf, etc.)	Yes
+submitted_at	Timestamp	Submission time to Kafka in ISO8601	Yes
