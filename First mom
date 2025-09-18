@@ -1,0 +1,82 @@
+🔹 The Overall Picture
+
+1. Where you are today
+
+You have a 24-GPU quad (all in one data center).
+
+Right now, Sindhu is setting up inference endpoints (Maverick + GPT) so people can test prompts and performance (this is serving, lighter GPU use).
+
+You’re holding back the infra team from splitting the GPUs into 16 (training/dev) + 8 (prod serving), because once that happens you will never have 24 again.
+
+
+
+2. What’s coming next
+
+The team plans to do from-scratch training of three model sizes:
+
+Small (2 GB) → needs ~4 GPUs.
+
+Medium (22 GB) → needs ~16 GPUs.
+
+XL (60 GB, 0.5 PB data) → needs the full 24 GPUs, running ~4–5 weeks.
+
+
+This XL training is the main reason to keep the 24-GPU window open.
+
+
+
+3. Why GPUs matter differently
+
+Inference/serving = bursts of usage, can survive on 1–2 GPUs per model.
+
+Training = continuous 90–100% GPU use, requires 16–24 GPUs for weeks.
+
+So inference isn’t the blocker — training is.
+
+
+
+4. Why storage matters
+
+NAS is fine for the first datasets (1 TB → 10 TB), as long as it’s on the same network as the GPUs.
+
+For XL training (0.5 PB), NAS will choke — you’ll need S3 or similar object storage with sharded files and prefetch.
+
+Latency/network placement makes the difference between 15 minutes vs 10+ hours for data copy (you already saw that).
+
+
+
+5. The timeline reality
+
+Now → Sept/Oct: inference endpoints live, v1 training on 4 GPUs (1 TB).
+
+Mid-Oct: medium model training on 16 GPUs (10 TB).
+
+Nov–Dec: XL model training on 24 GPUs (60 GB model, 0.5 PB data).
+
+After split (Q1 2026): permanently 16+8; no way back to 24.
+
+
+
+
+
+---
+
+🔹 In Simple Words
+
+Sindhu’s focus = get endpoints (inference).
+
+Your focus = make sure training has the GPUs it needs.
+
+Big risk = once infra splits, you lose the 24 GPUs forever.
+
+Ask = hold the split until at least end of Nov (safe ask: end of Dec).
+
+Storage = NAS now, S3 later.
+
+
+
+---
+
+👉 If your manager asks “what’s the big picture?”, you can safely say:
+
+“right now we’re just serving maverick + gpt so people can test, but the bigger plan is from-scratch training. the xl model needs all 24 gpus for a month or more, so if we let infra split early, we can’t finish. that’s why we’re thinking to hold 24 until end of nov or maybe dec. storage-wise, nas works for the small data, but for the huge 0.5 pb set we’ll need s3.”
