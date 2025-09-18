@@ -1,0 +1,65 @@
+Here’s a crisp “mom-style” summary you can keep handy or send out as notes:
+
+
+---
+
+🔹 Summary (MOM – Minutes of Meeting)
+
+1. GPU Split
+
+Decision: Pause infra split until end of Nov (stretch Dec).
+
+One 24-GPU pod will be created (Sindhu) for Freddy’s team to use flexibly (training + inference).
+
+After Nov/Dec → move to 16 (dev/training) + 8 (prod serving) split, no reversal.
+
+
+
+2. Inference vs Training
+
+Sindhu working on Maverick + GPT inference endpoints, NFR checks ongoing.
+
+Major requirement is training (small/medium/XL models).
+
+XL training (~500 TB input, ~24 GPUs, ~4–5 weeks) is why 24 GPUs must remain intact until Nov/Dec.
+
+
+
+3. Storage
+
+Current options: NAS (short-term), S3 (mid-Oct onwards).
+
+Petabyte-scale data must go to S3; NAS only temporary.
+
+Risk: Brady’s team may consume ~500 TB per model, possibly up to 1 PB including outputs.
+
+
+
+4. Capacity Concern
+
+Total storage = 3 PB (1 PB prod, 2 PB dev).
+
+If Brady’s workload takes 1 PB, only 1 PB left for the rest of the farm.
+
+Decision required from Tom/CTO on quotas and allocation.
+
+
+
+5. Action Items
+
+Update Confluence page with all old + new requirements (GPU, storage, models).
+
+Schedule 2-hour brainstorming session → consolidate into one picture/slide for leadership.
+
+Sandhya to confirm data generation path (HDFS vs NAS vs direct-to-S3) and ownership of movement.
+
+Tom to decide on storage quota policy (can Brady consume half of dev capacity?).
+
+
+
+
+
+---
+
+👉 Do you want me to also prepare a visual timeline (Sep–Dec) showing GPU allocation + storage usage, so you can paste it in Confluence or present it?
+
