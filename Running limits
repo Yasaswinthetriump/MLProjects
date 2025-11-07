@@ -1,0 +1,117 @@
+Perfect — since your clusters are MAN-41 and LEW-41, here’s the revised Confluence page draft reflecting exactly your environment (Run:AI + OCP + Harness + H200 GPU setup).
+You can copy-paste this directly into Confluence — it’s styled for your internal team documentation (Runbook / NFR / Known Issues section).
+
+
+---
+
+🧱 Run:AI Limitations – MAN-41 & LEW-41 GPU Clusters
+
+Last Updated: November 2025
+Owner: Sri Yasaswini Bokka – Platform AI Engineering
+Scope: MAN-41 (Primary GPU Cluster) | LEW-41 (Secondary GPU Cluster)
+Platform Stack: OpenShift 4.x | Run:AI v2.21 | NVIDIA H200 GPUs | Harness CI/CD | JupyterHub
+
+
+---
+
+🧩 1. Scheduling & GPU Distribution
+
+Limitation	Description	Cluster Impact	Mitigation / Next Steps
+
+Single-Node Confinement	Run:AI cannot automatically distribute one job across multiple GPU nodes without MPI/DDP.	Both clusters — large LLM training restricted to 8 GPUs per node.	Enable distributed training (Pytorch DDP / Horovod).
+Fractional GPU Fragmentation	0.25/0.5 GPU allocations leave idle VRAM segments unused.	MAN-41 (Dev) shows lower utilization under multi-user queues.	Encourage full-GPU runs for LLM tests or adjust fair-share policy.
+Pod Pending State	Scheduler fails to assign GPU due to taints/tolerations or node pool conflicts.	Common in LEW-41 after node restarts.	Verify labels and tolerations; restart Run:AI scheduler pod if stuck.
+
+
+
+---
+
+⚙️ 2. MIG & Driver Dependencies
+
+Limitation	Description	Cluster Impact	Mitigation
+
+Stale MIG Partitions	MIG instances stay marked “in-use” after pod deletion.	MAN-41 GPU #5 and #6 often require manual reset.	nvidia-smi mig -cgi -C or node reboot before rescheduling.
+Version Mismatch Risk	Run:AI Operator ↔ CUDA Driver mismatch after updates.	Affects both clusters during 2.21 upgrade.	Maintain Driver–Operator compatibility matrix; test in LEW-41 first.
+
+
+
+---
+
+🗂️ 3. Storage & PVC Lifecycle
+
+Limitation	Description	Impact / Cluster	Mitigation
+
+No Automatic PVC Backup	Run:AI does not retain PVC data for user home dirs or Jupyter pods.	LEW-41 user PVCs lost after namespace cleanup.	Use OpenShift PVC retain policy or NAS snapshot automation.
+NAS Mount Mismatch	Path differences (/mnt/data vs /home/jovyan) cause access denied.	Intermittent in MAN-41 Dev.	Standardize Helm templates with /mnt/nas mount.
+
+
+
+---
+
+🔐 4. RBAC & Namespace Authorization
+
+Limitation	Description	Impact	Mitigation
+
+RBAC Misalignment	Run:AI roles don’t fully map to OCP RBAC.	“Unauthorized” error on PVC mount between projects.	Create cluster-level role bindings via LDAP groups.
+Manual Role Sync	No auto propagation of Run:AI roles to OCP.	Manual update needed when users added to projects.	Schedule weekly RBAC sync job via Harness.
+
+
+
+---
+
+📊 5. Monitoring & Dashboard Visibility
+
+Limitation	Description	Observed Cluster	Mitigation
+
+Metrics Delay (10-30 s)	GPU utilization and job status refresh delayed in UI.	Both clusters.	Integrate Prometheus / Grafana for real-time metrics.
+Pod-Scoped Logging Only	Multi-pod training logs not aggregated under one job.	MAN-41.	Centralize logs with Fluentd or ELK stack.
+
+
+
+---
+
+🧰 6. CI/CD Integration Gaps
+
+Limitation	Description	Impact	Mitigation
+
+Harness Trigger Limitation	Run:AI CLI not natively supported in Harness pipeline.	Manual job trigger required.	Use REST API wrapper in Harness step.
+Jupyter Idle GPU Consumption	Notebooks stay active after user logout.	Unused GPU locked in MAN-41.	Deploy idle-pod cleanup cron job.
+
+
+
+---
+
+🧩 7. Version & Operational Notes
+
+Maintain Run:AI ↔ CUDA ↔ OCP version compatibility sheet.
+
+Upgrade first in LEW-41 (test bed) before MAN-41 (prod).
+
+Document idle GPU clean-up and PVC backup flows in Runbook.
+
+Sindhu’s escalation (Oct 2025): lack of VRAM visibility → added VRAM Calculator proposal in Runbook.
+
+
+
+---
+
+✅ Summary / Action Plan
+
+1. Enable real-time GPU metrics integration.
+
+
+2. Automate RBAC role sync between Run:AI and OpenShift.
+
+
+3. Add PVC snapshot policy in LEW-41 by Q4 2025.
+
+
+4. Test multi-node distributed training in LEW-41 before enabling in MAN-41.
+
+
+
+
+---
+
+Would you like me to generate this as a formatted Confluence export (Markdown → HTML) so you can paste it with headings, tables, and emojis preserved?
+Or should I add a “Known Issues” sub-section for Sindhu’s VRAM and Pod Pending escalations too?
