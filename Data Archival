@@ -1,0 +1,786 @@
+## **HDFS to S3 Archival - Architecture Flow (Text Format)**
+
+---
+
+## **1. HIGH-LEVEL ARCHITECTURE**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         HDFS TO S3 ARCHIVAL SYSTEM                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐      ┌──────────────┐      ┌──────────────┐      ┌──────────────┐
+│   Business   │      │  DevOps/     │      │   Jenkins    │      │   GitHub     │
+│  Stakeholder │─────▶│  Engineers   │─────▶│   CI/CD      │─────▶│  Repository  │
+└──────────────┘      └──────────────┘      └──────────────┘      └──────────────┘
+      │                       │                       │                     │
+      │ Provide HDFS         │ Prepare Excel         │ Deploy Code         │
+      │ Path List            │ Upload to HDFS        │                     │
+      │                       │                       │                     │
+      ▼                       ▼                       ▼                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         EXECUTION ENVIRONMENT                            │
+│  ┌─────────────────────────────────────────────────────────────────┐   │
+│  │                    Application Server (DEV_85)                   │   │
+│  │  ┌──────────────────────────────────────────────────────────┐   │   │
+│  │  │  Conda Environment (RCS_PYFRMPROD_Py307Sp232-2023)       │   │   │
+│  │  │                                                            │   │   │
+│  │  │  ┌────────────────────────────────────────────┐          │   │   │
+│  │  │  │   Shell Scripts (Orchestration Layer)      │          │   │   │
+│  │  │  │  • run_hdfs_to_s3_archival.sh             │          │   │   │
+│  │  │  │  • run_hdfs_to_s3_delete.sh                │          │   │   │
+│  │  │  └────────────────────────────────────────────┘          │   │   │
+│  │  │           │                                                │   │   │
+│  │  │           ▼                                                │   │   │
+│  │  │  ┌────────────────────────────────────────────┐          │   │   │
+│  │  │  │   Python Modules (Business Logic)          │          │   │   │
+│  │  │  │  • one_time_archival_insert.py             │          │   │   │
+│  │  │  │  • one_time_archival_details.py            │          │   │   │
+│  │  │  │  • one_time_archival_copy.py               │          │   │   │
+│  │  │  │  • one_time_archival_validate.py           │          │   │   │
+│  │  │  │  • one_time_archival_delete.py             │          │   │   │
+│  │  │  │  • logger_config.py                        │          │   │   │
+│  │  │  │  • utils.py                                │          │   │   │
+│  │  │  └────────────────────────────────────────────┘          │   │   │
+│  │  └──────────────────────────────────────────────────────────┘   │   │
+│  └─────────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Interacts With
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         EXTERNAL SYSTEMS                                 │
+│                                                                          │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐             │
+│  │     HDFS     │    │   Database   │    │  NetApp S3   │             │
+│  │  (Hadoop)    │    │ (Control Tbl)│    │  HPOS/SPOS   │             │
+│  │              │    │              │    │              │             │
+│  │ • Source     │    │ • Tracking   │    │ • Archive    │             │
+│  │ • Archive    │    │ • Metadata   │    │   Storage    │             │
+│  │ • Purge      │    │ • Audit      │    │              │             │
+│  └──────────────┘    └──────────────┘    └──────────────┘             │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## **2. DETAILED WORKFLOW - ARCHIVAL PROCESS**
+
+```
+START: Business Provides HDFS Paths to Archive
+│
+├─ STEP 1: PREPARATION
+│  │
+│  ├─ DevOps creates Excel file (archive_input_insert.xlsx)
+│  │  ├─ Column: Source_Path
+│  │  └─ Example: hdfs://cecldev/edl/appl/pyfrm/auto/11297/202103
+│  │
+│  ├─ Upload Excel to Jupyter Notebook
+│  │  └─ Location: /home/u806353/archive_input_insert.xlsx
+│  │
+│  ├─ Copy Excel from Jupyter to HDFS
+│  │  └─ Command: hadoop fs -put -f /home/u806353/archive_input_insert.xlsx 
+│  │             hdfs://cecldev/edl/appl/pyfrm/tech/archive/input/
+│  │
+│  └─ Activate Conda Environment
+│     └─ Command: conda activate /applog/pyfrm/localconda/envs/RCS_PYFRMPROD_Py307Sp232-2023
+│
+├─ STEP 2: EXECUTE ARCHIVAL SCRIPT
+│  │
+│  └─ Run: sh run_hdfs_to_s3_archival.sh
+│     │
+│     ├─ Interactive Prompts:
+│     │  ├─ Instance? [HPOS/SPOS]: SPOS
+│     │  ├─ Environment? [pyfrm_dev/pyfrm_sit/pyfrm_uat/pyfrm_prd]: pyfrm_dev
+│     │  └─ S3 Bucket?: cssi/pyfrm-archive
+│     │
+│     └─ Script orchestrates the following stages automatically:
+│
+├─ STAGE 1: INSERT
+│  │  Script: one_time_archival_insert.py
+│  │
+│  ├─ Read Excel from HDFS
+│  │  └─ Path: hdfs://cecldev/edl/appl/pyfrm/tech/archive/input/archive_input_insert.xlsx
+│  │
+│  ├─ Parse each HDFS source path
+│  │
+│  ├─ For each path, INSERT record into Control Table:
+│  │  ├─ id (auto-increment)
+│  │  ├─ source_path: hdfs://cecldev/edl/appl/pyfrm/auto/11297/202103
+│  │  ├─ archive_destination: NULL (to be populated later)
+│  │  ├─ status: 'INSERT'
+│  │  ├─ insert_timestamp: 2025-11-17 14:14:21
+│  │  ├─ insert_by: fstpyfrm
+│  │  └─ Other fields: NULL
+│  │
+│  ├─ Log: ./logs/arch_insert_output_2025-11-17-14-14-21.log
+│  │
+│  └─ Status: INSERT → DETAILS (for next stage)
+│
+├─ STAGE 2: DETAILS
+│  │  Script: one_time_archival_details.py
+│  │
+│  ├─ Query Control Table for records with status='DETAILS'
+│  │
+│  ├─ For each source_path:
+│  │  │
+│  │  ├─ Capture HDFS Metadata:
+│  │  │  ├─ Folder timestamp: hdfs dfs -stat "%y" <path>
+│  │  │  ├─ Folder owner: hdfs dfs -stat "%u" <path>
+│  │  │  └─ Folder group: hdfs dfs -stat "%g" <path>
+│  │  │
+│  │  ├─ UPDATE Control Table:
+│  │  │  ├─ hdfs_folder_timestamp: 2021-03-15 10:30:00
+│  │  │  ├─ hdfs_folder_owner: pyfrm_user
+│  │  │  ├─ status: 'DETAILS'
+│  │  │  ├─ details_timestamp: 2025-11-17 14:15:30
+│  │  │  └─ details_by: fstpyfrm
+│  │  │
+│  │  └─ Reason: Preserve original HDFS metadata before archival
+│  │           (Business requirement: Need to know original creation date)
+│  │
+│  ├─ Log: ./logs/arch_details_output_2025-11-17-14-15-30.log
+│  │
+│  └─ Status: DETAILS → COPY (for next stage)
+│
+├─ STAGE 3: COPY
+│  │  Script: one_time_archival_copy.py
+│  │
+│  ├─ Query Control Table for records with status='COPY'
+│  │
+│  ├─ For each source_path:
+│  │  │
+│  │  ├─ Determine S3 Destination:
+│  │  │  ├─ Bucket: cssi/pyfrm-archive (from user input)
+│  │  │  ├─ Instance: SPOS (from user input)
+│  │  │  └─ S3 Path: s3://cssi/pyfrm-archive/pyfrm_dev/cecldev/edl/appl/pyfrm/auto/11297/202103
+│  │  │
+│  │  ├─ Execute Copy:
+│  │  │  └─ Command: hadoop distcp <source_hdfs_path> <s3_destination_path>
+│  │  │     Example: hadoop distcp hdfs://cecldev/edl/appl/pyfrm/auto/11297/202103 \
+│  │  │              s3a://cssi/pyfrm-archive/pyfrm_dev/cecldev/edl/appl/pyfrm/auto/11297/202103
+│  │  │
+│  │  ├─ UPDATE Control Table:
+│  │  │  ├─ archive_destination: s3://cssi/pyfrm-archive/pyfrm_dev/...
+│  │  │  ├─ status: 'COPY'
+│  │  │  ├─ copy_timestamp: 2025-11-17 14:20:45
+│  │  │  └─ copy_by: fstpyfrm
+│  │  │
+│  │  └─ Progress tracking in logs
+│  │
+│  ├─ Log: ./logs/arch_copy_output_2025-11-17-14-20-45.log
+│  │
+│  └─ Status: COPY → VALIDATE (for next stage)
+│
+├─ STAGE 4: VALIDATE
+│  │  Script: one_time_archival_validate.py
+│  │
+│  ├─ Query Control Table for records with status='VALIDATE'
+│  │
+│  ├─ For each source_path + archive_destination pair:
+│  │  │
+│  │  ├─ VALIDATION CHECK 1: MD5 Checksum
+│  │  │  ├─ Calculate MD5 for HDFS files: hdfs dfs -checksum <path>
+│  │  │  ├─ Calculate MD5 for S3 files: s3 etag (or download and compute)
+│  │  │  ├─ Compare: HDFS_MD5 == S3_MD5
+│  │  │  └─ Result: PASS/FAIL
+│  │  │
+│  │  ├─ VALIDATION CHECK 2: File Count
+│  │  │  ├─ Count files in HDFS: hdfs dfs -count <path>
+│  │  │  ├─ Count files in S3: aws s3 ls --recursive | wc -l
+│  │  │  ├─ Compare: HDFS_count == S3_count
+│  │  │  └─ Result: PASS/FAIL
+│  │  │
+│  │  ├─ VALIDATION CHECK 3: File Size
+│  │  │  ├─ Sum file sizes in HDFS: hdfs dfs -du -s <path>
+│  │  │  ├─ Sum file sizes in S3: aws s3 ls --recursive --summarize
+│  │  │  ├─ Compare: HDFS_size == S3_size
+│  │  │  └─ Result: PASS/FAIL
+│  │  │
+│  │  ├─ Overall Validation Result:
+│  │  │  └─ ALL 3 checks must PASS
+│  │  │
+│  │  └─ UPDATE Control Table:
+│  │     ├─ If ALL PASS:
+│  │     │  ├─ status: 'SUCCESS'
+│  │     │  ├─ validation_status: 'PASSED'
+│  │     │  ├─ validate_timestamp: 2025-11-17 14:25:30
+│  │     │  └─ validate_by: fstpyfrm
+│  │     │
+│  │     └─ If ANY FAIL:
+│  │        ├─ status: 'FAILED'
+│  │        ├─ validation_status: 'FAILED'
+│  │        ├─ failure_reason: 'MD5 mismatch' (or specific failure)
+│  │        ├─ validate_timestamp: 2025-11-17 14:25:30
+│  │        └─ validate_by: fstpyfrm
+│  │
+│  ├─ Log: ./logs/arch_validate_output_2025-11-17-14-25-30.log
+│  │
+│  └─ Status: VALIDATE → SUCCESS or FAILED
+│
+├─ STEP 3: BUSINESS CONFIRMATION
+│  │
+│  ├─ DevOps shares validation results with Business
+│  │
+│  ├─ Business performs their own validation:
+│  │  ├─ Access S3 via WinSCP or other tools
+│  │  ├─ Spot-check files
+│  │  └─ Confirm data integrity
+│  │
+│  └─ Business provides written confirmation: "OK to delete from HDFS"
+│
+├─ STEP 4: EXECUTE DELETE SCRIPT (Separate Process)
+│  │
+│  └─ Run: sh run_hdfs_to_s3_delete.sh
+│     │
+│     ├─ Interactive Prompts:
+│     │  ├─ Confirm deletion? [Y/N]
+│     │  └─ Additional safety prompts
+│     │
+│     └─ Script executes DELETE stage:
+│
+└─ STAGE 5: DELETE
+   │  Script: one_time_archival_delete.py
+   │
+   ├─ Query Control Table for records with status='SUCCESS'
+   │
+   ├─ For each source_path:
+   │  │
+   │  ├─ SOFT DELETE (Not permanent):
+   │  │  │
+   │  │  ├─ Move to Purge Directory:
+   │  │  │  └─ Command: hdfs dfs -mv <source_path> <purge_path>
+   │  │  │     Example: hdfs dfs -mv hdfs://cecldev/edl/appl/pyfrm/auto/11297/202103 \
+   │  │  │              hdfs://cecldev/edl/appl/pyfrm/tech/one_time_archival/archive/purge/202103
+   │  │  │
+   │  │  ├─ Purge Directory Characteristics:
+   │  │  │  ├─ Access: Restricted to service accounts only
+   │  │  │  ├─ Not accessible to business users
+   │  │  │  ├─ Retention: ~6 months
+   │  │  │  └─ Cleanup: Manual (planned for automation)
+   │  │  │
+   │  │  └─ Original HDFS path now empty/deleted
+   │  │
+   │  ├─ UPDATE Control Table:
+   │  │  ├─ purge_location: hdfs://.../purge/202103
+   │  │  ├─ status: 'DELETED'
+   │  │  ├─ delete_timestamp: 2025-11-17 15:00:00
+   │  │  └─ delete_by: fstpyfrm
+   │  │
+   │  └─ Log: ./logs/arch_delete_output_2025-11-17-15-00-00.log
+   │
+   └─ Status: DELETED (Final state)
+
+END: Archival Process Complete
+```
+
+---
+
+## **3. COMPONENT INTERACTION DIAGRAM**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        COMPONENT INTERACTIONS                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+User/DevOps Engineer
+      │
+      │ 1. Prepare Excel with HDFS paths
+      ▼
+┌──────────────────┐
+│ Jupyter Notebook │ (Web Interface)
+│  /home/u806353/  │
+└──────────────────┘
+      │
+      │ 2. Upload Excel file
+      ▼
+┌──────────────────┐
+│  Local Storage   │ (User Home Directory)
+│ /home/u806353/   │
+│ archive_input_   │
+│ insert.xlsx      │
+└──────────────────┘
+      │
+      │ 3. hadoop fs -put -f
+      ▼
+┌──────────────────────────────────────────┐
+│              HDFS Cluster                │
+│  hdfs://cecldev/edl/appl/pyfrm/tech/    │
+│  archive/input/archive_input_insert.xlsx│
+└──────────────────────────────────────────┘
+      │
+      │ 4. Shell script reads Excel
+      ▼
+┌──────────────────────────────────────────┐
+│       run_hdfs_to_s3_archival.sh        │
+│         (Orchestration Layer)            │
+│                                          │
+│  • Prompts user for inputs               │
+│  • Reads config.ini                      │
+│  • Calls Python modules sequentially     │
+│  • Checks status in Control Table        │
+│  • Manages workflow state                │
+└──────────────────────────────────────────┘
+      │
+      │ 5. Execute Python modules
+      ▼
+┌─────────────────────────────────────────────────────────┐
+│              Python Modules (Business Logic)            │
+│                                                          │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  one_time_archival_insert.py                    │   │
+│  │  ├─ Read Excel from HDFS                        │   │
+│  │  ├─ Parse source paths                          │   │
+│  │  └─ INSERT records into Control Table           │   │
+│  └─────────────────────────────────────────────────┘   │
+│           │                                             │
+│           │ Status Check: Wait for status='DETAILS'     │
+│           ▼                                             │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  one_time_archival_details.py                   │   │
+│  │  ├─ Query records with status='DETAILS'         │   │
+│  │  ├─ Capture HDFS metadata (timestamp, owner)    │   │
+│  │  └─ UPDATE Control Table with metadata          │   │
+│  └─────────────────────────────────────────────────┘   │
+│           │                                             │
+│           │ Status Check: Wait for status='COPY'        │
+│           ▼                                             │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  one_time_archival_copy.py                      │   │
+│  │  ├─ Query records with status='COPY'            │   │
+│  │  ├─ Execute hadoop distcp HDFS → S3             │   │
+│  │  └─ UPDATE Control Table with S3 destination    │   │
+│  └─────────────────────────────────────────────────┘   │
+│           │                                             │
+│           │ Status Check: Wait for status='VALIDATE'    │
+│           ▼                                             │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │  one_time_archival_validate.py                  │   │
+│  │  ├─ Query records with status='VALIDATE'        │   │
+│  │  ├─ Run 3 validation checks                     │   │
+│  │  └─ UPDATE status: SUCCESS or FAILED            │   │
+│  └─────────────────────────────────────────────────┘   │
+│                                                          │
+│  Each module interacts with:                            │
+│  ├─ config.ini (for paths, buckets, credentials)        │
+│  ├─ logger_config.py (for logging)                      │
+│  └─ utils.py (for common functions)                     │
+└─────────────────────────────────────────────────────────┘
+      │                    │                    │
+      │                    │                    │
+      ▼                    ▼                    ▼
+┌────────────┐    ┌────────────────┐    ┌────────────┐
+│    HDFS    │    │    Database    │    │  S3 (SPOS) │
+│  (Source)  │    │ (Control Table)│    │ (Archive)  │
+│            │    │                │    │            │
+│ • Read     │    │ • INSERT       │    │ • Write    │
+│ • Metadata │    │ • UPDATE       │    │ • Read     │
+│ • List     │    │ • SELECT       │    │            │
+└────────────┘    └────────────────┘    └────────────┘
+
+After Business Confirmation:
+      │
+      ▼
+┌──────────────────────────────────────────┐
+│       run_hdfs_to_s3_delete.sh           │
+│         (Deletion Workflow)               │
+└──────────────────────────────────────────┘
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  one_time_archival_delete.py            │
+│  ├─ Query records with status='SUCCESS' │
+│  ├─ Move HDFS data to Purge directory   │
+│  └─ UPDATE status: DELETED              │
+└─────────────────────────────────────────┘
+      │
+      ▼
+┌────────────────────────┐
+│   HDFS Purge Directory │
+│  (Temporary Storage)   │
+│  • 6-month retention   │
+│  • Manual cleanup      │
+└────────────────────────┘
+```
+
+---
+
+## **4. DATA FLOW DIAGRAM**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           DATA FLOW                                      │
+└─────────────────────────────────────────────────────────────────────────┘
+
+INPUT DATA:
+┌──────────────────────────────────────────┐
+│  archive_input_insert.xlsx               │
+│  ┌────────────────────────────────────┐  │
+│  │ Source_Path                        │  │
+│  ├────────────────────────────────────┤  │
+│  │ hdfs://.../auto/11297/202103       │  │
+│  │ hdfs://.../auto/11297/202106       │  │
+│  │ hdfs://.../auto/11297/202112       │  │
+│  │ ...                                │  │
+│  └────────────────────────────────────┘  │
+└──────────────────────────────────────────┘
+              │
+              │ Read by insert.py
+              ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│                      CONTROL TABLE (Database)                             │
+│  ┌────┬──────────────┬──────────────────┬────────┬────────────┬───────┐  │
+│  │ ID │ Source_Path  │Archive_Dest      │ Status │ Timestamps │ ...   │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │ 1  │hdfs://.../   │ NULL             │INSERT  │2025-11-17  │       │  │
+│  │    │202103        │                  │        │14:14:21    │       │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │    │              │                  │ ↓      │            │       │  │
+│  │ 1  │hdfs://.../   │ NULL             │DETAILS │2025-11-17  │owner: │  │
+│  │    │202103        │                  │        │14:15:30    │pyfrm  │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │    │              │                  │ ↓      │            │       │  │
+│  │ 1  │hdfs://.../   │s3://cssi/pyfrm-  │COPY    │2025-11-17  │       │  │
+│  │    │202103        │archive/.../202103│        │14:20:45    │       │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │    │              │                  │ ↓      │            │       │  │
+│  │ 1  │hdfs://.../   │s3://cssi/pyfrm-  │VALIDATE│2025-11-17  │       │  │
+│  │    │202103        │archive/.../202103│        │14:25:30    │       │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │    │              │                  │ ↓      │            │       │  │
+│  │ 1  │hdfs://.../   │s3://cssi/pyfrm-  │SUCCESS │2025-11-17  │MD5:✓  │  │
+│  │    │202103        │archive/.../202103│        │14:25:30    │Count:✓│  │
+│  │    │              │                  │        │            │Size:✓ │  │
+│  ├────┼──────────────┼──────────────────┼────────┼────────────┼───────┤  │
+│  │    │              │                  │ ↓      │            │       │  │
+│  │ 1  │hdfs://.../   │s3://cssi/pyfrm-  │DELETED │2025-11-17  │Purge: │  │
+│  │    │202103        │archive/.../202103│        │15:00:00    │hdfs...│  │
+│  └────┴──────────────┴──────────────────┴────────┴────────────┴───────┘  │
+└──────────────────────────────────────────────────────────────────────────┘
+              │                                           │
+              │ Query and Update                          │
+              ▼                                           │
+┌──────────────────────────────────────────┐             │
+│        HDFS (Source Data)                │             │
+│  hdfs://cecldev/edl/appl/pyfrm/          │             │
+│  auto/11297/202103/                      │             │
+│  ├── file1.parquet                       │             │
+│  ├── file2.parquet                       │             │
+│  ├── file3.parquet                       │             │
+│  └── ...                                 │             │
+│                                          │             │
+│  Metadata Captured:                      │             │
+│  • Timestamp: 2021-03-15 10:30:00        │             │
+│  • Owner: pyfrm_user                     │             │
+│  • Size: 15 GB                           │             │
+│  • File Count: 1,234 files               │             │
+└──────────────────────────────────────────┘             │
+              │                                           │
+              │ Copy via hadoop distcp                    │
+              ▼                                           │
+┌──────────────────────────────────────────┐             │
+│     NetApp S3 - SPOS (Archive)           │             │
+│  s3://cssi/pyfrm-archive/pyfrm_dev/      │◄────────────┘
+│  cecldev/edl/appl/pyfrm/auto/11297/      │  Validate
+│  202103/                                 │  (MD5, Count, Size)
+│  ├── file1.parquet                       │
+│  ├── file2.parquet                       │
+│  ├── file3.parquet                       │
+│  └── ...                                 │
+│                                          │
+│  Verification:                           │
+│  • MD5 Checksum: Match ✓                 │
+│  • File Count: 1,234 files ✓             │
+│  • Size: 15 GB ✓                         │
+└──────────────────────────────────────────┘
+
+After Business Confirmation:
+              │
+              │ Soft Delete
+              ▼
+┌──────────────────────────────────────────┐
+│   HDFS Purge Directory (Temporary)       │
+│  hdfs://cecldev/edl/appl/pyfrm/tech/     │
+│  one_time_archival/archive/purge/        │
+│  202103/                                 │
+│  ├── file1.parquet                       │
+│  ├── file2.parquet                       │
+│  ├── file3.parquet                       │
+│  └── ...                                 │
+│                                          │
+│  Retention: 6 months                     │
+│  Access: Service accounts only           │
+│  Cleanup: Manual (future: automated)     │
+└──────────────────────────────────────────┘
+              │
+              │ After 6 months
+              ▼
+        Permanent Deletion
+```
+
+---
+
+## **5. STATE TRANSITION DIAGRAM**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    ARCHIVAL JOB STATE MACHINE                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+                    ┌─────────────┐
+                    │   START     │
+                    │ (Excel Read)│
+                    └──────┬──────┘
+                           │
+                           │ Parse Excel
+                           │ Create Records
+                           ▼
+                    ┌─────────────┐
+                    │   INSERT    │◄─────────┐
+                    │  (Initial)  │          │
+                    └──────┬──────┘          │
+                           │                 │
+                           │ Success         │ Retry
+                           ▼                 │
+                    ┌─────────────┐          │
+                    │   DETAILS   │          │
+                    │ (Metadata)  │──────────┘
+                    └──────┬──────┘   Failure
+                           │
+                           │ Success
+                           ▼
+                    ┌─────────────┐
+                    │    COPY     │◄─────────┐
+                    │ (HDFS→S3)   │          │
+                    └──────┬──────┘          │
+                           │                 │
+                           │ Success         │ Retry
+                           ▼                 │
+                    ┌─────────────┐          │
+                    │  VALIDATE   │          │
+                    │ (3 Checks)  │──────────┘
+                    └──────┬──────┘   Failure
+                           │
+                ┌──────────┴──────────┐
+                │                     │
+         All Checks Pass       Any Check Fails
+                │                     │
+                ▼                     ▼
+         ┌─────────────┐       ┌─────────────┐
+         │   SUCCESS   │       │   FAILED    │
+         │             │       │             │
+         └──────┬──────┘       └──────┬──────┘
+                │                     │
+                │                     │
+                │ Business            │ Investigation
+                │ Confirmation        │ & Re-run
+                │                     │
+                ▼                     ▼
+         ┌─────────────┐       ┌─────────────┐
+         │   DELETED   │       │  REMEDIATE  │
+         │ (Purge Dir) │       │   & RETRY   │
+         └──────┬──────┘       └─────────────┘
+                │
+                │ After 6 months
+                ▼
+         ┌─────────────┐
+         │   PURGED    │
+         │ (Permanent) │
+         └─────────────┘
+                │
+                ▼
+              [END]
+```
+
+---
+
+## **6. ERROR HANDLING FLOW**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       ERROR HANDLING & RECOVERY                          │
+└─────────────────────────────────────────────────────────────────────────┘
+
+SCENARIO 1: HDFS Path Not Found
+┌──────────────────────────────────────┐
+│ Error: HDFS path does not exist      │
+└───────────────┬──────────────────────┘
+                │
+                ├─ Log error in ./logs/arch_<stage>_output.log
+                ├─ UPDATE Control Table: status='FAILED'
+                ├─ Set failure_reason: 'HDFS path not found'
+                └─ Alert DevOps team
+                     │
+                     └─ Action: Verify path with business
+                                Re-run after path confirmation
+
+SCENARIO 2: S3 Access Denied
+┌──────────────────────────────────────┐
+│ Error: S3 bucket access denied       │
+└───────────────┬──────────────────────┘
+                │
+                ├─ Log error in ./logs/arch_copy_output.log
+                ├─ UPDATE Control Table: status='FAILED'
+                ├─ Set failure_reason: 'S3 access denied'
+                └─ Alert DevOps team
+                     │
+                     └─ Action: Verify S3 credentials/permissions
+                                Re-run after access granted
+
+SCENARIO 3: Validation Failure
+┌──────────────────────────────────────┐
+│ Error: MD5 checksum mismatch         │
+└───────────────┬──────────────────────┘
+                │
+                ├─ Log detailed comparison in ./logs/arch_validate_output.log
+                ├─ UPDATE Control Table: status='FAILED'
+                ├─ Set validation_status: 'FAILED'
+                ├─ Set failure_reason: 'MD5 mismatch: HDFS=xxx, S3=yyy'
+                └─ Alert DevOps team
+                     │
+                     └─ Action: Investigate data corruption
+                                Delete S3 data
+                                Re-run COPY stage
+
+SCENARIO 4: Network Timeout
+┌──────────────────────────────────────┐
+│ Error: Network timeout during copy   │
+└───────────────┬──────────────────────┘
+                │
+                ├─ Log error with timestamp
+                ├─ Implement retry logic (3 attempts)
+                │    │
+                │    ├─ Attempt 1: Wait 5 minutes, retry
+                │    ├─ Attempt 2: Wait 10 minutes, retry
+                │    └─ Attempt 3: Wait 15 minutes, retry
+                │
+                └─ If all retries fail:
+                     ├─ UPDATE status='FAILED'
+                     ├─ Set failure_reason: 'Network timeout after 3 retries'
+                     └─ Alert DevOps team
+
+SCENARIO 5: Database Connection Failure
+┌──────────────────────────────────────┐
+│ Error: Cannot connect to database    │
+└───────────────┬──────────────────────┘
+                │
+                ├─ Log error in ./logs/
+                ├─ Implement retry logic (immediate retry)
+                └─ If persistent:
+                     ├─ Alert DevOps team
+                     └─ Action: Verify database connectivity
+                                Check VPN/network
+                                Verify credentials
+```
+
+---
+
+## **7. CONFIGURATION FLOW**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      CONFIGURATION MANAGEMENT                            │
+└─────────────────────────────────────────────────────────────────────────┘
+
+config.ini Structure:
+┌──────────────────────────────────────────────────────────────────────────┐
+│  [Paths_pyfrm_dev]                                                       │
+│  excel_file_insert = hdfs://cecldev/edl/appl/pyfrm/tech/                │
+│                      one_time_archival/archive/input/                    │
+│                      archive_input_insert.xlsx                           │
+│  output_dir = /apps/home/fstpyfrm/one_time_archival_results/           │
+│  log_dir = /apps/home/fstpyfrm/logs/                                    │
+│  temp_hdfs_directory = hdfs://cecldev/edl/appl/pyfrm/tech/              │
+│                        one_time_archival/archive/purge/                  │
+│  excel_file_delete = hdfs://cecldev/edl/appl/pyfrm/tech/                │
+│                      one_time_archival/archive/input/                    │
+│                      archive_input_delete.xlsx                           │
+│                                                                          │
+│  [Paths_pyfrm_sit]                                                       │
+│  (Similar structure for SIT environment)                                 │
+│                                                                          │
+│  [Paths_pyfrm_uat]                                                       │
+│  (Similar structure for UAT environment)                                 │
+│                                                                          │
+│  [S3_Buckets_SPOS]                                                       │
+│  bucket = cssi/pyfrm-archive                                             │
+│                                                                          │
+│  [S3_Buckets_HPOS]                                                       │
+│  bucket = (HPOS bucket name)                                             │
+│                                                                          │
+│  [Database]                                                              │
+│  host = db-server.wellsfargo.com                                         │
+│  port = 5432                                                             │
+│  database = pyfrm_archive                                                │
+│  table = archival_control_table                                          │
+│  user = fstpyfrm                                                         │
+│  password = ${VAULT_PASSWORD}  # Retrieved from vault                    │
+└──────────────────────────────────────────────────────────────────────────┘
+         │
+         │ Read by all Python modules
+         ▼
+┌────────────────────────────────────────┐
+│  Python Module: config_reader.py       │
+│  ├─ Parse config.ini                   │
+│  ├─ Validate all paths exist           │
+│  ├─ Retrieve secrets from vault        │
+│  └─ Return configuration dictionary    │
+└────────────────────────────────────────┘
+         │
+         │ Used by
+         ▼
+┌────────────────────────────────────────┐
+│  All Python Modules                    │
+│  ├─ one_time_archival_insert.py        │
+│  ├─ one_time_archival_details.py       │
+│  ├─ one_time_archival_copy.py          │
+│  ├─ one_time_archival_validate.py      │
+│  └─ one_time_archival_delete.py        │
+└────────────────────────────────────────┘
+```
+
+---
+
+## **8. LOGGING ARCHITECTURE**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         LOGGING FRAMEWORK                                │
+└─────────────────────────────────────────────────────────────────────────┘
+
+logger_config.py:
+├─ Centralized logging configuration
+├─ Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
+├─ Log format: [TIMESTAMP] [LEVEL] [MODULE] [MESSAGE]
+└─ Output: File + Console
+
+Log Directory: /apps/home/fstpyfrm/logs/
+
+Log Files (per execution):
+├─ arch_insert_output_2025-11-17-14-14-21.log
+│  └─ Tracks INSERT stage: Excel parsing, DB inserts, errors
+│
+├─ arch_details_output_2025-11-17-14-15-30.log
+│  └─ Tracks DETAILS stage: Metadata capture, HDFS queries
+│
+├─ arch_copy_output_2025-11-17-14-20-45.log
+│  └─ Tracks COPY stage: Data transfer progress, throughput
+│
+├─ arch_validate_output_2025-11-17-14-25-30.log
+│  └─ Tracks VALIDATE stage: MD5 checks, file counts, sizes
+│
+└─ arch_delete_output_2025-11-17-15-00-00.log
+   └─ Tracks DELETE stage: Move to purge, cleanup
+
+Log Rotation:
+├─ Size-based: Rotate at 100 MB
+├─ Time-based: Daily rotation
+└─ Retention: Keep logs for 90 days
+
+Log Analysis:
+└─ grep, awk, or centralized logging tools (Splunk/ELK)
+```
+
+---
+
+Would you like me to elaborate on any specific flow or create additional diagrams (like security flow, deployment flow, or monitoring flow)?
