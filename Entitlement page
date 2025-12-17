@@ -1,0 +1,114 @@
+Perfect! Before I start writing, I need you to answer the critical questions from my previous message. However, let me prioritize the **most important ones** that will block me from creating accurate documentation:
+
+---
+
+## **🚨 BLOCKING QUESTIONS - Need Answers to Proceed**
+
+### **Priority 1: Resource Type Master (CRITICAL)**
+```sql
+SELECT resource_type_id, resource_type_name, description 
+FROM midasst.resource_type_master 
+ORDER BY resource_type_id;
+```
+**Why critical:** I saw IDs 5 and 7 in your screenshots, but you only mentioned 5 types. I need the complete authoritative list.
+
+---
+
+### **Priority 2: Complete Table Schemas**
+```sql
+DESCRIBE midasst.product_master;
+DESCRIBE midasst.role_master;
+DESCRIBE midasst.user_role_assoc;
+DESCRIBE midasst.resource_privilege;
+DESCRIBE midasst.resource_type_master;
+DESCRIBE midasst.system_configs;
+```
+**Why critical:** Need column names, data types, and constraints for the ERD and query examples.
+
+---
+
+### **Priority 3: Data Transfer Authorization Rules**
+**Specific scenario:**
+```
+User with role_id = 60360 (Commercial)
+Wants to create data transfer: PYFARM_HWX_DEV → PYFARM_S3_DEV
+```
+
+**Show me the exact rows needed in `resource_privilege`:**
+```sql
+SELECT * FROM midasst.resource_privilege 
+WHERE role_id = 60360 
+  AND resource_uri IN ('PYFARM_HWX_DEV', 'PYFARM_S3_DEV');
+```
+
+**Or tell me:** 
+- What `resource_type_id` grants "data transfer" capability?
+- Do I need 2 rows (one for source, one for destination)?
+- Do I need different resource_type_ids for read vs write?
+
+---
+
+### **Priority 4: System Configs Structure**
+```sql
+SELECT * FROM midasst.system_configs 
+WHERE system_name LIKE 'PYFARM%' 
+LIMIT 5;
+```
+**Why critical:** Need to understand how systems are registered and referenced in `resource_privilege.resource_uri`.
+
+---
+
+### **Priority 5: AD Integration Details**
+- Which AD groups map to which `role_id` values?
+- Example: `"WF_DS_Commercial_Team"` → `role_id = ?`
+- How often does AD sync run?
+- What happens when user's AD group membership changes?
+
+---
+
+## **📊 What I Can Start With (If You Can't Answer Everything Now)**
+
+If you can provide **just the Priority 1-3 answers**, I can create:
+
+### **Phase 1 Documentation (Immediate)**
+✅ Architecture overview  
+✅ Core table relationships  
+✅ Basic access provisioning workflow  
+✅ SQL query templates  
+✅ Troubleshooting common issues  
+
+### **Phase 2 Documentation (After remaining answers)**
+⏳ Complete ERD with all columns  
+⏳ AD integration details  
+⏳ Environment-specific procedures  
+⏳ Advanced troubleshooting  
+⏳ Compliance/audit section  
+
+---
+
+## **Quick Decision Point**
+
+**Option A:** You provide all answers now → I create complete documentation in one go  
+**Option B:** You provide Priority 1-3 now → I create Phase 1 documentation → You provide remaining answers → I update with Phase 2
+
+**Which approach works better for you?** 
+
+Also, can you run these queries and paste the results? That would be the fastest way:
+
+```sql
+-- Query 1: Resource types
+SELECT * FROM midasst.resource_type_master ORDER BY resource_type_id;
+
+-- Query 2: Sample resource_privilege for a role
+SELECT * FROM midasst.resource_privilege WHERE role_id = 60360 LIMIT 10;
+
+-- Query 3: Sample system_configs
+SELECT * FROM midasst.system_configs WHERE system_name LIKE 'PYFARM%' LIMIT 5;
+
+-- Query 4: Table schemas
+SHOW COLUMNS FROM midasst.resource_privilege;
+SHOW COLUMNS FROM midasst.role_master;
+SHOW COLUMNS FROM midasst.user_role_assoc;
+```
+
+Once I have these, I'll start building the Confluence page! 🚀
